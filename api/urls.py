@@ -28,6 +28,7 @@ urlpatterns = [
     path("admin/supervisors/<int:pk>/", views.admin_supervisors, name="admin_supervisor_detail"),
     path("hr/nurses/", views.hr_nurses, name="hr_nurses"),
     path("hr/nurses/<int:pk>/confirm/", views.confirm_employment, name="confirm_employment"),
+    path("hr/nurses/<int:pk>/reject/", views.reject_employment, name="reject_employment"),
     path("hr/register/", views.register_hr, name="register_hr"),
     path("hr/employers/", views.employer_options, name="employer_options"),
     path("admin/hr-registrations/", views.hr_review_queue, name="hr_review_queue"),

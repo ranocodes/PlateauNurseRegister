@@ -601,7 +601,7 @@ class AdminTests(RegistryTestBase):
 
         response = self.client.get(other_url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn("/admin/", response["Location"])
+        self.assertIn("/django-admin/", response["Location"])
 
     def test_hr_is_not_allowed_to_edit_from_admin(self):
         nurse = self.create_nurse()
@@ -761,5 +761,5 @@ class SmokeTests(RegistryTestBase):
         from django.test import Client
         client = Client()
         client.force_login(self.super_admin)
-        response = client.get('/admin/')
+        response = client.get("/django-admin/")
         self.assertEqual(response.status_code, 200)

@@ -29,7 +29,10 @@ class PublicNurseSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if request is not None:
             from django.urls import reverse
-            return request.build_absolute_uri(reverse("verify_nurse_photo", args=[obj.nanm_id]))
+
+            return request.build_absolute_uri(
+                reverse("verify_nurse_photo", args=[obj.nanm_id])
+            )
         return ""
 
     def get_employer(self, obj):
@@ -37,16 +40,36 @@ class PublicNurseSerializer(serializers.ModelSerializer):
 
 
 class NurseProfileSerializer(serializers.ModelSerializer):
-    licence_status = serializers.CharField(source="public_licence_status", read_only=True)
+    licence_status = serializers.CharField(
+        source="public_licence_status", read_only=True
+    )
     employer = serializers.CharField(source="employer.name", read_only=True)
     employment_confirmed = serializers.SerializerMethodField()
+    employment_status = serializers.CharField(read_only=True)
+    employment_decided_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Nurse
         fields = (
-            "id", "nanm_id", "full_name", "email", "phone", "photo", "licence_number",
-            "licence_expiry", "licence_status", "specialty", "cadre", "employer", "ward",
-            "record_status", "employer_confirmed_at", "employment_confirmed", "created_at",
+            "id",
+            "nanm_id",
+            "full_name",
+            "email",
+            "phone",
+            "photo",
+            "licence_number",
+            "licence_expiry",
+            "licence_status",
+            "specialty",
+            "cadre",
+            "employer",
+            "ward",
+            "record_status",
+            "employer_confirmed_at",
+            "employment_confirmed",
+            "employment_status",
+            "employment_decided_at",
+            "created_at",
         )
 
     def get_employment_confirmed(self, obj):

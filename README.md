@@ -36,8 +36,6 @@ Use the following demo accounts for the local admin dashboard. All share the sam
 
 ### Non-superadmin admins
 
-- `demo_officer1`
-- `demo_officer2`
 - `demo_supervisor`
 - `demo_hr1`
 - `demo_hr2`

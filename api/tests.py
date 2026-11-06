@@ -138,6 +138,62 @@ class RegistryAPITests(TestCase):
         self.assertEqual(outside.status_code, 404)
         self.nurse.refresh_from_db()
         self.assertEqual(self.nurse.employer_confirmed_by, self.hr)
+    
+    def test_hr_can_reject_only_own_employer_nurse(self):
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {Token.objects.create(user=self.hr).key}"
+        )
+
+        original_record_status = self.nurse.record_status
+        original_licence_expiry = self.nurse.licence_expiry
+
+        own = self.client.post(
+            f"/api/v1/hr/nurses/{self.nurse.pk}/reject/"
+        )
+        outside = self.client.post(
+            f"/api/v1/hr/nurses/{self.other_nurse.pk}/reject/"
+        )
+
+        self.assertEqual(own.status_code, 200)
+        self.assertEqual(outside.status_code, 404)
+
+        self.nurse.refresh_from_db()
+
+        self.assertEqual(
+            self.nurse.employment_status,
+            Nurse.EmploymentStatus.REJECTED,
+        )
+        self.assertIsNotNone(self.nurse.employment_decided_at)
+        self.assertEqual(self.nurse.employment_decided_by, self.hr)
+
+        # Employment rejection must not affect registration or licence data.
+        self.assertEqual(self.nurse.record_status, original_record_status)
+        self.assertEqual(self.nurse.licence_expiry, original_licence_expiry)
+
+        # Rejected employment must not be recorded as a confirmation.
+        self.assertIsNone(self.nurse.employer_confirmed_at)
+        self.assertIsNone(self.nurse.employer_confirmed_by)
+
+    def test_hr_cannot_decide_employment_twice(self):
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {Token.objects.create(user=self.hr).key}"
+        )
+
+        first = self.client.post(
+            f"/api/v1/hr/nurses/{self.nurse.pk}/reject/"
+        )
+        second = self.client.post(
+            f"/api/v1/hr/nurses/{self.nurse.pk}/confirm/"
+        )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 400)
+
+        self.nurse.refresh_from_db()
+        self.assertEqual(
+            self.nurse.employment_status,
+            Nurse.EmploymentStatus.REJECTED,
+        )
 
     def test_renewal_stays_pending_until_reviewer_approves(self):
         old_expiry = self.nurse.licence_expiry

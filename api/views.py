@@ -267,14 +267,62 @@ def hr_nurses(request):
 def confirm_employment(request, pk):
     if not is_hr(request.user):
         raise PermissionDenied
-    nurse = nurses_for_user(request.user).filter(pk=pk).first()
-    if not nurse:
-        raise NotFound("Nurse not found for your employer.")
-    nurse.employer_confirmed_at = timezone.now()
-    nurse.employer_confirmed_by = request.user
-    nurse.save(update_fields=["employer_confirmed_at", "employer_confirmed_by", "updated_at"])
+
+    with transaction.atomic():
+        nurse = nurses_for_user(request.user).select_for_update().filter(pk=pk).first()
+
+        if not nurse:
+            raise NotFound("Nurse not found for your employer.")
+
+        if nurse.employment_status != Nurse.EmploymentStatus.PENDING:
+            raise ValidationError("This employment record has already been decided.")
+
+        decided_at = timezone.now()
+
+        nurse.employment_status = Nurse.EmploymentStatus.CONFIRMED
+        nurse.employment_decided_at = decided_at
+        nurse.employment_decided_by = request.user
+        nurse.employer_confirmed_at = decided_at
+        nurse.employer_confirmed_by = request.user
+
+        nurse.save(update_fields=[
+            "employment_status",
+            "employment_decided_at",
+            "employment_decided_by",
+            "employer_confirmed_at",
+            "employer_confirmed_by",
+            "updated_at",
+        ])
+
     return Response(NurseProfileSerializer(nurse, context={"request": request}).data)
 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def reject_employment(request, pk):
+    if not is_hr(request.user):
+        raise PermissionDenied
+
+    with transaction.atomic():
+        nurse = nurses_for_user(request.user).select_for_update().filter(pk=pk).first()
+
+        if not nurse:
+            raise NotFound("Nurse not found for your employer.")
+
+        if nurse.employment_status != Nurse.EmploymentStatus.PENDING:
+            raise ValidationError("This employment record has already been decided.")
+
+        nurse.employment_status = Nurse.EmploymentStatus.REJECTED
+        nurse.employment_decided_at = timezone.now()
+        nurse.employment_decided_by = request.user
+
+        nurse.save(update_fields=[
+            "employment_status",
+            "employment_decided_at",
+            "employment_decided_by",
+            "updated_at",
+        ])
+
+    return Response(NurseProfileSerializer(nurse, context={"request": request}).data)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])

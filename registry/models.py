@@ -40,6 +40,11 @@ class Nurse(models.Model):
         SUSPENDED = "suspended", "Suspended"
         REVOKED = "revoked", "Revoked"
 
+    class EmploymentStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        CONFIRMED = "confirmed", "Confirmed"
+        REJECTED = "rejected", "Rejected"
+
     nanm_id = models.CharField(max_length=32, unique=True, null=True, blank=True)
     full_name = models.CharField(max_length=255)
     phone = models.CharField(max_length=32)
@@ -52,7 +57,9 @@ class Nurse(models.Model):
     licence_expiry = models.DateField()
     specialty = models.CharField(max_length=120, blank=True)
     cadre = models.CharField(max_length=120, blank=True)
-    employer = models.ForeignKey(Employer, on_delete=models.PROTECT, related_name="nurses")
+    employer = models.ForeignKey(
+        Employer, on_delete=models.PROTECT, related_name="nurses"
+    )
     ward = models.CharField(max_length=120, blank=True)
     record_status = models.CharField(
         max_length=16,
@@ -79,6 +86,19 @@ class Nurse(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         related_name="confirmed_nurses",
+        null=True,
+        blank=True,
+    )
+    employment_status = models.CharField(
+        max_length=12,
+        choices=EmploymentStatus.choices,
+        default=EmploymentStatus.PENDING,
+    )
+    employment_decided_at = models.DateTimeField(null=True, blank=True)
+    employment_decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="employment_decisions",
         null=True,
         blank=True,
     )
@@ -294,7 +314,9 @@ class Notification(models.Model):
         SENT = "sent", "Sent"
         FAILED = "failed", "Failed"
 
-    nurse = models.ForeignKey(Nurse, on_delete=models.CASCADE, related_name="notifications")
+    nurse = models.ForeignKey(
+        Nurse, on_delete=models.CASCADE, related_name="notifications"
+    )
     type = models.CharField(max_length=32, choices=Type.choices)
     licence_expiry = models.DateField()
     sent_at = models.DateTimeField(null=True, blank=True)
@@ -326,11 +348,15 @@ class HRRegistrationRequest(models.Model):
 
     email = models.EmailField(unique=True)
     hospital_name = models.CharField(max_length=255)
-    employer_type = models.CharField(max_length=32, choices=Employer.Type.choices, default=Employer.Type.HOSPITAL)
+    employer_type = models.CharField(
+        max_length=32, choices=Employer.Type.choices, default=Employer.Type.HOSPITAL
+    )
     lga = models.CharField(max_length=120)
     contact_email = models.EmailField(blank=True)
     password = models.CharField(max_length=128)
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

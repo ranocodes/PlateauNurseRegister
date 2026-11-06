@@ -263,14 +263,6 @@ class NurseAdmin(admin.ModelAdmin):
 
     export_csv.short_description = "Export selected nurses as CSV"
 
-    def renew_selected(self, request, queryset):
-        """Renew selected nurses' licences."""
-        if not request.user.is_super_admin:
-            raise PermissionDenied("Only super admins may renew licences.")
-        updated = queryset.update(licence_expiry=timezone.now() + timedelta(days=180))
-        messages.success(request, f"{updated} nurse(s) licences renewed.")
-
-    renew_selected.short_description = "Renew selected nurses' licences"
 
 
 
